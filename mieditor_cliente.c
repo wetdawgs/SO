@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-
-#define KGRN  "\x1B[32m"
-#define KWHT  "\x1B[37m"    
+#include "mieditor.h"  
 
 int main(int argc, char *argv[]) {
     /* Definimos el mensaje del cliente */
@@ -20,7 +11,7 @@ int main(int argc, char *argv[]) {
         printf("Error: el programa debe recibir exactamente un parámetro.\n");
         exit(EXIT_FAILURE);
     }
-    printf("%s\n", new_file);
+
     /* Crea uh nuevo socket */
     int network_socket;
     network_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -61,12 +52,12 @@ int main(int argc, char *argv[]) {
     }
 
     if (attempts == 3) {
-        printf("Demasiados intentos. Cerrando conexión con el servidor.\n");
+        printf("\nDemasiados intentos. Cerrando conexión con el servidor.\n");
         close(network_socket);
         exit(EXIT_FAILURE);
     }
 
-    printf("Conexión con el servidor exitosa. Abriendo archivo %s...\n", new_file);
+    printf("\nConexión con el servidor exitosa. Abriendo archivo %s...\n", new_file);
     fflush(stdin);
 
     /* Enviamos al servidor el nombre del nuevo archivo que queremos crear. */
@@ -78,11 +69,22 @@ int main(int argc, char *argv[]) {
 
     /* Mostramos los datos nos fueron enviados por el servidor */
     if (strcmp(server_response, "FAIL") == 0) {
-        printf("El archivo \"%s\" no pudo ser creado/abierto. Cerrando conexión con el servidor.\n", new_file);
+        printf("\nEl archivo \"%s\" no pudo ser creado/abierto. Cerrando conexión con el servidor.\n", new_file);
         exit(EXIT_FAILURE);
     }
 
     /* Sección para distinguir al editor del resto del programa */
+    printf(KBLU);
+
+    /* Mostramos el editor */
+    printf("______  _______    ___________________________              \n");
+    printf("___   |/  /__(_)   ___  ____/_____  /__(_)_  /______________\n");
+    printf("__  /|_/ /__  /    __  __/  _  __  /__  /_  __/  __ \\_  ___/\n");
+    printf("_  /  / / _  /     _  /___  / /_/ / _  / / /_ / /_/ /  /    \n");
+    printf("/_/  /_/  /_/      /_____/  \\__,_/  /_/  \\__/ \\____//_/     \n");
+
+    printf("\nPara cerrar el editor, presione la tecla Enter dos veces\n");
+
     printf(KGRN);
     printf("\n---------------------------- %s ----------------------------\n\n", new_file);
 
@@ -98,9 +100,13 @@ int main(int argc, char *argv[]) {
         send(network_socket, user_input_line, sizeof(user_input_line), 0);
     }
 
-    printf("----------------------------------------------------------------------\n");
+    printf("--------------------------------------------------------");
+    for (int i = 0; i < strlen(new_file) + 2; i++)
+        putchar('-');
+    printf("\n");
+        
     printf(KWHT);
-    printf("\nEl contenido se guardó en el archivo \"%s\". Cerrando conexión\n", new_file);
+    printf("\nEl contenido se guardó en el archivo \"%s\". Cerrando conexión.\n", new_file);
 
     /* Cerramos el socket para terminar la conexión */
     close(network_socket);

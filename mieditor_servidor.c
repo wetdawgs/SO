@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-
-#define KBLU  "\x1B[34m"
-#define KRED  "\x1B[31m"
+#include "mieditor.h"
 
 int main() {
     /* Los datos que vamos a enviar a los clientes */
@@ -31,51 +22,74 @@ int main() {
 
     /* Escuchamos por conexiones al servidor */
     /* log */ printf("[ log ] Servidor inicializado. Escuchando por clientes...\n");
-    listen(server_socket, 5);
 
-    /* Guardamos al socket del cliente, aceptando su conexión al servidor */
-    int client_socket;
-    client_socket = accept(server_socket, NULL, NULL);
-    /* log */ printf("[ log ] Conexión establecida con cliente.\n");
-
-    /* Enviamos la contraseña al socket client */
-    send(client_socket, actual_password, sizeof(actual_password), 0);
-    /* log */ printf("[ log ] Contraseña enviada a cliente.\n");
-
-    char new_file_name[32];
-    recv(client_socket, &new_file_name, sizeof(new_file_name), 0);
-    /* log */ printf("[ log ] Nombre del nuevo archivo recibido con éxito: \"%s\".\n", new_file_name);
-
-    /* Intentamos crear el nuevo archivo o abrirlo si ya existe */
-    FILE *new_file;
-    new_file = fopen(new_file_name, "a");
-
-    char SUCC[32] = "SUCC";
-    char FAIL[32] = "FAIL";
-
-    if (new_file == NULL) {
-        printf(KRED);
-        printf("[Error] El archivo %s no pudo ser creado/abierto.\n", new_file_name);
-        send(client_socket, FAIL, sizeof(FAIL), 0);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Enviamos el mensaje al socket client */
-    send(client_socket, SUCC, sizeof(SUCC), 0);
-
-    char user_input_line[400];
     while (1) {
-        read(client_socket, user_input_line, sizeof(user_input_line));
-        if (strcmp(user_input_line, "EOF") == 0)
-            break;
-        fprintf(new_file, "%s", user_input_line);
-    }
+        fflush(stdin);
+        printf(KBLU);
+        listen(server_socket, 5);
 
-    /* Cerramos el archivo al que estamos escribiendo */
-    fclose(new_file);
+        /* Guardamos al socket del cliente, aceptando su conexión al servidor */
+        int client_socket;
+        client_socket = accept(server_socket, NULL, NULL);
+        /* log */ printf("\n[ log ] Conexión establecida con cliente %d.\n", client_socket);
+
+        /* Enviamos la contraseña al socket client */
+        send(client_socket, actual_password, sizeof(actual_password), 0);
+        /* log */ printf("[ log ] Contraseña enviada a cliente.\n");
+
+        char new_file_name[32];
+        recv(client_socket, &new_file_name, sizeof(new_file_name), 0);
+        if (strcmp(new_file_name, "") != 0) {
+        /* log */ printf("[ log ] Nombre del nuevo archivo recibido con éxito: \"%s\".\n", new_file_name);
+        } else {
+            printf(KRED);
+            /* log */ printf("[Error] El cliente no pudo establecer una conexión.\n");
+            /* log */ printf("[Error] Cerrando conexión con el cliente %d.\n", client_socket);
+            close(client_socket);
+            //exit(EXIT_FAILURE);
+            continue;
+        }
+
+        /* Intentamos crear el nuevo archivo o abrirlo si ya existe */
+        FILE *new_file;
+        new_file = fopen(new_file_name, "a");
+
+        char SUCC[32] = "SUCC";
+        char FAIL[32] = "FAIL";
+
+        if (new_file == NULL) {
+            printf(KRED);
+            /* log */ printf("[Error] El archivo %s no pudo ser creado/abierto.\n", new_file_name);
+            send(client_socket, FAIL, sizeof(FAIL), 0);
+            close(client_socket);
+            //exit(EXIT_FAILURE);
+            /* log */ printf("[Error] Cerrando conexión con el cliente %d.\n", client_socket);
+            continue;
+        }
+
+        /* Enviamos el mensaje de éxito al socket client */
+        send(client_socket, SUCC, sizeof(SUCC), 0);
+
+        char user_input_line[400];
+        while (1) {
+            read(client_socket, user_input_line, sizeof(user_input_line));
+            if (strcmp(user_input_line, "EOF") == 0)
+                break;
+            fprintf(new_file, "%s", user_input_line);
+        }
+
+        /* Cerramos el archivo al que estamos escribiendo */
+        fclose(new_file);
+
+        /* Cerramos el archivo */
+        /* log */ printf("[ log ] El contenido se guardó en el archivo \"%s\".\n", new_file_name);
+
+        /* Cerramos la conexión */
+        /* log */ printf("[ log ] Fin de la comunicación con el cliente %d.\n", client_socket);
+        close(client_socket);
+    }
 
     /* Cerramos la conexión */
-    /* log */ printf("[ log ] El contenido se guardó en el archivo \"%s\".\n", new_file_name);
     /* log */ printf("[ log ] Fin de la comunicación.\n");
     close(server_socket);
 
