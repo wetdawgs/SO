@@ -1,25 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
-
 #include <netinet/in.h>
 #include <unistd.h>
 
+#define KGRN  "\x1B[32m"
+#define KWHT  "\x1B[37m"    
+
 int main(int argc, char *argv[]) {
     /* Definimos el mensaje del cliente */
-    char *new_file;
+    char new_file[32];
 
     /* Verificamos que el número de argumentos sea correcto. */
     if (argc == 2) {
-        new_file = argv[1];
+        strcpy(new_file, argv[1]);
     } else {
         printf("Error: el programa debe recibir exactamente un parámetro.\n");
         exit(EXIT_FAILURE);
     }
-
+    printf("%s\n", new_file);
     /* Crea uh nuevo socket */
     int network_socket;
     network_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     /* En caso de que se presente algún problema con la conexión, finalizamos la ejecución del programa. */
     if (connection_status != 0) {
-        printf("La conexión no pudo ser establecida con el servidor.");
+        printf("La conexión no pudo ser establecida con el servidor.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -44,42 +45,46 @@ int main(int argc, char *argv[]) {
     recv(network_socket, &password, sizeof(password), 0);
 
     /* Pedimos al usuario que teclee la contraseña para poder comunicarse con el servidor */
-    printf("Por favor proporcione la contraseña: ");
     int attempts = 0;
-    char user_password[32];
+    char *prompt = "Por favor proporcione la contraseña: ";
+    char *user_password;
     while (1) {
-        scanf("%s", user_password);
-        // printf("user pass: %s.\n", user_password);
-
+        user_password = getpass(prompt);
         if (strcmp(user_password, password) == 0) {
             break;
         } else {
             attempts++;
             if (attempts == 3)
                 break;
-            printf("La contraseña no es correcta. Intente de nuevo: ");
+            prompt = "La contraseña no es correcta. Intente de nuevo: ";
         }
     }
 
     if (attempts == 3) {
-        printf("Demasiados intentos. Cerrando conexión.\n");
+        printf("Demasiados intentos. Cerrando conexión con el servidor.\n");
         close(network_socket);
         exit(EXIT_FAILURE);
     }
 
-    printf("Conexión con el servidor exitosa.\n");
-
+    printf("Conexión con el servidor exitosa. Abriendo archivo %s...\n", new_file);
     fflush(stdin);
 
     /* Enviamos al servidor el nombre del nuevo archivo que queremos crear. */
     send(network_socket, new_file, sizeof(new_file), 0);
 
     /* Comenzamos a recibir información del servidor */
-    char server_response[256];
+    char server_response[32];
     recv(network_socket, &server_response, sizeof(server_response), 0);
 
     /* Mostramos los datos nos fueron enviados por el servidor */
-    printf("El servidor envió los datos: %s\n", server_response);
+    if (strcmp(server_response, "FAIL") == 0) {
+        printf("El archivo \"%s\" no pudo ser creado/abierto. Cerrando conexión con el servidor.\n", new_file);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Sección para distinguir al editor del resto del programa */
+    printf(KGRN);
+    printf("\n---------------------------- %s ----------------------------\n\n", new_file);
 
     //char* user_input_line;
     char user_input_line[256];
@@ -92,6 +97,10 @@ int main(int argc, char *argv[]) {
         }
         send(network_socket, user_input_line, sizeof(user_input_line), 0);
     }
+
+    printf("----------------------------------------------------------------------\n");
+    printf(KWHT);
+    printf("\nEl contenido se guardó en el archivo \"%s\". Cerrando conexión\n", new_file);
 
     /* Cerramos el socket para terminar la conexión */
     close(network_socket);
