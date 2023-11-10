@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #define KWHT  "\x1B[37m"
 #define KRED  "\x1B[31m"

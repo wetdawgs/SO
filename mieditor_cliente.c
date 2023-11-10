@@ -8,6 +8,7 @@ int main(int argc, char *argv[]) {
     if (argc == 2) {
         strcpy(new_file, argv[1]);
     } else {
+        printf(KRED);
         printf("Error: el programa debe recibir exactamente un parámetro.\n");
         exit(EXIT_FAILURE);
     }
@@ -20,14 +21,16 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(43210);
-    server_address.sin_addr.s_addr = INADDR_ANY;
+    //server_address.sin_addr.s_addr = "192.168.0.7"; //INADDR_ANY;
+    inet_pton(AF_INET, "192.168.0.7", &(server_address.sin_addr));
 
     /* Establecer una conexión al servidor */
     int connection_status = connect(network_socket, (struct sockaddr *) &server_address, sizeof(server_address));
 
     /* En caso de que se presente algún problema con la conexión, finalizamos la ejecución del programa. */
     if (connection_status != 0) {
-        printf("La conexión no pudo ser establecida con el servidor.\n");
+        printf(KRED);
+        printf("Error: La conexión no pudo ser establecida con el servidor.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -52,6 +55,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (attempts == 3) {
+        printf(KRED);
         printf("\nDemasiados intentos. Cerrando conexión con el servidor.\n");
         close(network_socket);
         exit(EXIT_FAILURE);
@@ -69,6 +73,7 @@ int main(int argc, char *argv[]) {
 
     /* Mostramos los datos nos fueron enviados por el servidor */
     if (strcmp(server_response, "FAIL") == 0) {
+        printf(KRED);
         printf("\nEl archivo \"%s\" no pudo ser creado/abierto. Cerrando conexión con el servidor.\n", new_file);
         exit(EXIT_FAILURE);
     }
