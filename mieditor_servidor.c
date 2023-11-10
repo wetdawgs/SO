@@ -50,9 +50,12 @@ int main() {
             continue;
         }
 
+        char file_to_open[37] = "sync/";
+        strcat(file_to_open, new_file_name);
+
         /* Intentamos crear el nuevo archivo o abrirlo si ya existe */
         FILE *new_file;
-        new_file = fopen(new_file_name, "a");
+        new_file = fopen(file_to_open, "a");
 
         char SUCC[32] = "SUCC";
         char FAIL[32] = "FAIL";
@@ -82,7 +85,7 @@ int main() {
         fclose(new_file);
 
         /* Cerramos el archivo */
-        /* log */ printf("[ log ] El contenido se guardó en el archivo \"%s\".\n", new_file_name);
+        /* log */ printf("[ log ] El contenido se guardó en el archivo \"sync/%s\".\n", new_file_name);
 
         /* Cerramos la conexión */
         /* log */ printf("[ log ] Fin de la comunicación con el cliente %d.\n", client_socket);
